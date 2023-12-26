@@ -191,18 +191,18 @@ func (p *PersonioMock) PersonioMockHandler(w http.ResponseWriter, req *http.Requ
 
 			_, _ = w.Write(employeeResponseBody)
 		}
-	} else if method == http.MethodPost && strings.HasPrefix(path, "/company/employees") {
+	} else if (method == http.MethodPost || method == http.MethodPatch) && strings.HasPrefix(path, "/company/employees") {
 		if !p.authenticate(w, req) {
 			return
 		}
-		employeeCreateResponseBody, err := os.ReadFile(filepath.Join("testdata", "new-employee-response.json"))
+		employeeCreateUpdateResponseBody, err := os.ReadFile(filepath.Join("testdata", "employee-create-update-response.json"))
 		if err != nil {
-			fmt.Printf("Failed to read create employee test data file: %s\n", err)
+			fmt.Printf("Failed to read create/update employee test data file: %s\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		_, _ = w.Write(employeeCreateResponseBody)
+		_, _ = w.Write(employeeCreateUpdateResponseBody)
 
 	} else {
 		w.WriteHeader(http.StatusNotFound)
@@ -597,5 +597,44 @@ func TestClient_CreateEmployee(t *testing.T) {
 
 	if id != wantId {
 		t.Errorf("Expected to create employee ID %d but got %d", wantId, id)
+	}
+}
+
+func TestClient_UpdateEmployee(t *testing.T) {
+
+	wantId := int64(7161253)
+	server, err := newTestServer()
+	if err != nil {
+		t.Errorf("Failed to setup mock Personio server: failed to listen: %s", err)
+		return
+	}
+
+	defer func() {
+		_ = server.Close()
+	}()
+
+	personioCredentials := Credentials{ClientId: "abc", ClientSecret: "def"}
+	personio, err := NewClient(context.TODO(), fmt.Sprintf("http://localhost:%d", server.port), personioCredentials)
+	if err != nil {
+		t.Errorf("Failed to create Personio API v1 client: %s", err)
+		return
+	}
+
+	e := &EmployeeUpdateRequest{
+		Employee: EmployeeUpdateAttributes{
+			FirstName: "Mega",
+			LastName:  "Hui",
+			CustomAttributes: map[string]string{
+				"dynamic_10375675": "100",
+			},
+		},
+	}
+	id, err := personio.UpdateEmployee(wantId, e)
+	if err != nil {
+		t.Errorf("Failed to update employee: %s", err)
+	}
+
+	if id != wantId {
+		t.Errorf("Expected to update employee ID %d but got %d", wantId, id)
 	}
 }

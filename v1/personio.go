@@ -253,6 +253,25 @@ type EmployeeCreateAttributes struct {
 	CustomAttributes   map[string]string `json:"custom_attributes,omitempty"`
 }
 
+type EmployeeUpdateRequest struct {
+	Employee EmployeeUpdateAttributes `json:"employee"`
+}
+
+type EmployeeUpdateAttributes struct {
+	FirstName          string            `json:"first_name,omitempty"`           // "John"
+	LastName           string            `json:"last_name,omitempty"`            // "Dou"
+	Gender             string            `json:"gender,omitempty"`               // "male"
+	Position           string            `json:"position,omitempty"`             // "developer"
+	Subcompany         string            `json:"subcompany,omitempty"`           // "ACME"
+	Department         string            `json:"department,omitempty"`           // "IT"
+	Office             string            `json:"office,omitempty"`               // "Madrid"
+	HireDate           *time.Time        `json:"hire_date,omitempty"`            // "2020-01-31"
+	WeeklyWorkingHours int64             `json:"weekly_working_hours,omitempty"` // 40
+	Status             string            `json:"status,omitempty"`               // "active"
+	SupervisorId       int64             `json:"supervisor_id,omitempty"`        // 5
+	CustomAttributes   map[string]string `json:"custom_attributes,omitempty"`
+}
+
 // EmployeeResult is the response body of /company/employee/{{id}}
 type employeeResult struct {
 	Data Employee `json:"data"`
@@ -555,7 +574,6 @@ func (personio *Client) GetTimeOffs(start *time.Time, end *time.Time, offset int
 // CreateEmployee creates a new employee from the given attributes
 // Email, FirstName and LastName are required attributes.
 func (personio *Client) CreateEmployee(e *EmployeeCreateRequest) (int64, error) {
-
 	employeeJson, err := json.Marshal(e)
 	if err != nil {
 		return -1, err
@@ -588,6 +606,47 @@ func (personio *Client) CreateEmployee(e *EmployeeCreateRequest) (int64, error) 
 	employeeId, ok := result.Data.(map[string]interface{})["id"]
 	if !ok {
 		return -1, fmt.Errorf("Unpacking ID of newly created employee failed")
+	}
+
+	return int64(employeeId.(float64)), nil
+}
+
+// UpdateEmployee updates an existing employee identified by their ID
+// with the given attributes
+func (personio *Client) UpdateEmployee(id int64, e *EmployeeUpdateRequest) (int64, error) {
+	employeeJson, err := json.Marshal(e)
+	if err != nil {
+		return -1, err
+	}
+
+	url := fmt.Sprintf("%s/company/employees/%d", personio.baseUrl, id)
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(employeeJson))
+	if err != nil {
+		return -1, err
+	}
+
+	body, err := personio.doRequestJson(req, true)
+	if err != nil {
+		return -1, err
+	}
+
+	var result resultBody
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return -1, err
+	}
+
+	if !result.Success {
+		return -1, fmt.Errorf(
+			"Update employee request was not successful: %d - %s",
+			result.Error.Code,
+			result.Error.Message)
+	}
+
+	// unpack single Employee id
+	employeeId, ok := result.Data.(map[string]interface{})["id"]
+	if !ok {
+		return -1, fmt.Errorf("Unpacking ID of updated employee failed")
 	}
 
 	return int64(employeeId.(float64)), nil
