@@ -585,6 +585,9 @@ func TestClient_CreateEmployee(t *testing.T) {
 			Email:     "mega@giantswarm.io",
 			FirstName: "Mega",
 			LastName:  "Hui",
+			CustomAttributes: map[string]string{
+				"dynamic_10375675": "100",
+			},
 		},
 	}
 	id, err := personio.CreateEmployee(e)

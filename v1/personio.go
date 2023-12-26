@@ -238,19 +238,19 @@ type EmployeeCreateRequest struct {
 }
 
 type EmployeeCreateAttributes struct {
-	Email              string     `json:"email"`                          // "john.dou@demo.com"
-	FirstName          string     `json:"first_name"`                     // "John"
-	LastName           string     `json:"last_name"`                      // "Dou"
-	Gender             string     `json:"gender,omitempty"`               // "male"
-	Position           string     `json:"position,omitempty"`             // "developer"
-	Subcompany         string     `json:"subcompany,omitempty"`           // "ACME"
-	Department         string     `json:"department,omitempty"`           // "IT"
-	Office             string     `json:"office,omitempty"`               // "Madrid"
-	HireDate           *time.Time `json:"hire_date,omitempty"`            // "2020-01-31"
-	WeeklyWorkingHours int64      `json:"weekly_working_hours,omitempty"` // 40
-	Status             string     `json:"status,omitempty"`               // "active"
-	SupervisorId       int64      `json:"supervisor_id,omitempty"`        // 5
-	// CustomAttributes   map[string]interface{}
+	Email              string            `json:"email"`                          // "john.dou@demo.com"
+	FirstName          string            `json:"first_name"`                     // "John"
+	LastName           string            `json:"last_name"`                      // "Dou"
+	Gender             string            `json:"gender,omitempty"`               // "male"
+	Position           string            `json:"position,omitempty"`             // "developer"
+	Subcompany         string            `json:"subcompany,omitempty"`           // "ACME"
+	Department         string            `json:"department,omitempty"`           // "IT"
+	Office             string            `json:"office,omitempty"`               // "Madrid"
+	HireDate           *time.Time        `json:"hire_date,omitempty"`            // "2020-01-31"
+	WeeklyWorkingHours int64             `json:"weekly_working_hours,omitempty"` // 40
+	Status             string            `json:"status,omitempty"`               // "active"
+	SupervisorId       int64             `json:"supervisor_id,omitempty"`        // 5
+	CustomAttributes   map[string]string `json:"custom_attributes,omitempty"`
 }
 
 // EmployeeResult is the response body of /company/employee/{{id}}
