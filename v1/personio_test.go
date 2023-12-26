@@ -191,6 +191,18 @@ func (p *PersonioMock) PersonioMockHandler(w http.ResponseWriter, req *http.Requ
 
 			_, _ = w.Write(employeeResponseBody)
 		}
+	} else if method == http.MethodPost && strings.HasPrefix(path, "/company/employees") {
+		if !p.authenticate(w, req) {
+			return
+		}
+		employeeCreateResponseBody, err := os.ReadFile(filepath.Join("testdata", "new-employee-response.json"))
+		if err != nil {
+			fmt.Printf("Failed to read create employee test data file: %s\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		_, _ = w.Write(employeeCreateResponseBody)
 
 	} else {
 		w.WriteHeader(http.StatusNotFound)
@@ -545,5 +557,42 @@ func TestClient_GetTimeOffs(t *testing.T) {
 				break
 			}
 		}
+	}
+}
+
+func TestClient_CreateEmployee(t *testing.T) {
+
+	wantId := int64(7161253)
+	server, err := newTestServer()
+	if err != nil {
+		t.Errorf("Failed to setup mock Personio server: failed to listen: %s", err)
+		return
+	}
+
+	defer func() {
+		_ = server.Close()
+	}()
+
+	personioCredentials := Credentials{ClientId: "abc", ClientSecret: "def"}
+	personio, err := NewClient(context.TODO(), fmt.Sprintf("http://localhost:%d", server.port), personioCredentials)
+	if err != nil {
+		t.Errorf("Failed to create Personio API v1 client: %s", err)
+		return
+	}
+
+	e := &EmployeeCreateRequest{
+		Employee: EmployeeCreateAttributes{
+			Email:     "mega@giantswarm.io",
+			FirstName: "Mega",
+			LastName:  "Hui",
+		},
+	}
+	id, err := personio.CreateEmployee(e)
+	if err != nil {
+		t.Errorf("Failed to create new employee: %s", err)
+	}
+
+	if id != wantId {
+		t.Errorf("Expected to create employee ID %d but got %d", wantId, id)
 	}
 }

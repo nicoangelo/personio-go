@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -230,6 +231,26 @@ type TimeOff struct {
 	} `json:"certificate"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type EmployeeCreateRequest struct {
+	Employee EmployeeCreateAttributes `json:"employee"`
+}
+
+type EmployeeCreateAttributes struct {
+	Email              string     `json:"email"`                          // "john.dou@demo.com"
+	FirstName          string     `json:"first_name"`                     // "John"
+	LastName           string     `json:"last_name"`                      // "Dou"
+	Gender             string     `json:"gender,omitempty"`               // "male"
+	Position           string     `json:"position,omitempty"`             // "developer"
+	Subcompany         string     `json:"subcompany,omitempty"`           // "ACME"
+	Department         string     `json:"department,omitempty"`           // "IT"
+	Office             string     `json:"office,omitempty"`               // "Madrid"
+	HireDate           *time.Time `json:"hire_date,omitempty"`            // "2020-01-31"
+	WeeklyWorkingHours int64      `json:"weekly_working_hours,omitempty"` // 40
+	Status             string     `json:"status,omitempty"`               // "active"
+	SupervisorId       int64      `json:"supervisor_id,omitempty"`        // 5
+	// CustomAttributes   map[string]interface{}
 }
 
 // EmployeeResult is the response body of /company/employee/{{id}}
@@ -529,4 +550,45 @@ func (personio *Client) GetTimeOffs(start *time.Time, end *time.Time, offset int
 	}
 
 	return timeOffs, nil
+}
+
+// CreateEmployee creates a new employee from the given attributes
+// Email, FirstName and LastName are required attributes.
+func (personio *Client) CreateEmployee(e *EmployeeCreateRequest) (int64, error) {
+
+	employeeJson, err := json.Marshal(e)
+	if err != nil {
+		return -1, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, personio.baseUrl+"/company/employees", bytes.NewBuffer(employeeJson))
+	if err != nil {
+		return -1, err
+	}
+
+	body, err := personio.doRequestJson(req, true)
+	if err != nil {
+		return -1, err
+	}
+
+	var result resultBody
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return -1, err
+	}
+
+	if !result.Success {
+		return -1, fmt.Errorf(
+			"Create employee request was not successful: %d - %s",
+			result.Error.Code,
+			result.Error.Message)
+	}
+
+	// unpack single Employee id
+	employeeId, ok := result.Data.(map[string]interface{})["id"]
+	if !ok {
+		return -1, fmt.Errorf("Unpacking ID of newly created employee failed")
+	}
+
+	return int64(employeeId.(float64)), nil
 }
